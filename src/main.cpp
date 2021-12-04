@@ -11,10 +11,13 @@
 #define TFT_MOSI 11  // Data out
 #define TFT_SCLK 13  // Clock out
 
-//INA226 ina;
+INA219 ina;
 mString<34> str;
 int32_t _seconds = 0;
-int energy = 9000;
+float energy = 0;
+float current = 0;
+float power = 0;
+float voltage = 0;
 
 // For ST7735-based displays, we will use this call
 Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS, TFT_DC, TFT_MOSI, TFT_SCLK, TFT_RST);
@@ -31,7 +34,7 @@ void fillRect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color) {
   tft.fillRect(x, y + 32, w, h, color);
 }
 
-void drawData(int x, float current, float power, float voltage, int energy, int32_t seconds) {
+void drawData(int x, float _current, float _power, float _voltage, float _energy, int32_t seconds) {
   int y = 32;
   int step = 15;
 
@@ -43,7 +46,7 @@ void drawData(int x, float current, float power, float voltage, int energy, int3
   tft.fillRect(x, y, 48, 7, ST77XX_BLACK); // Clear screen zone
   tft.setCursor(x, y);
   str = "";
-  str = str + current + " A";
+  str = str + _current + " A";
   tft.print(str.c_str());
 
   // Voltage
@@ -51,7 +54,7 @@ void drawData(int x, float current, float power, float voltage, int energy, int3
   tft.fillRect(x, y, 48, 7, ST77XX_BLACK); // Clear screen zone
   tft.setCursor(x, y);
   str = "";
-  str = str + voltage + " V";
+  str = str + _voltage + " V";
   tft.print(str.c_str());
 
   // Charge power
@@ -59,7 +62,7 @@ void drawData(int x, float current, float power, float voltage, int energy, int3
   tft.fillRect(x, y, 48, 7, ST77XX_BLACK); // Clear screen zone
   tft.setCursor(x, y);
   str = "";
-  str = str + power + " W";
+  str = str + _power + " W";
   tft.print(str.c_str());
 
   // Stored energy
@@ -67,7 +70,7 @@ void drawData(int x, float current, float power, float voltage, int energy, int3
   tft.fillRect(x, y, 48, 7, ST77XX_BLACK); // Clear screen zone
   tft.setCursor(x, y);
   str = "";
-  str = str + energy + " mAh";
+  str = str + _energy + " mAh";
   tft.print(str.buf);
 
   // Time
@@ -88,13 +91,11 @@ void updateInterface() {
   drawLine(65, 0, 128, ST77XX_GREEN);
   drawLine(66, 0, 128, ST77XX_GREEN);
 
-  // float current = ina.getCurrent();
-  // float power = ina.getPower();
-  // float voltage = ina.getShuntVoltage();
+  current = ina.getCurrent();
+  power = ina.getPower();
+  voltage = ina.getShuntVoltage();
 
-  float current = 0.895;
-  float power = 4.363;
-  float voltage = 3.668;
+  Serial.print(ina.getCurrent());
 
   drawData(10, current, power, voltage, energy, _seconds);
   drawData(75, current, power, voltage, energy, _seconds);
@@ -102,7 +103,11 @@ void updateInterface() {
 
 void setup(void) {
   Serial.begin(9600);
-  Serial.print(F("Hello! ST77xx TFT Test"));
+
+  // Init Ina board
+  ina.begin();
+  ina.setResolution(INA219_VBUS, INA219_RES_12BIT_X4);
+  ina.setResolution(INA219_VSHUNT, INA219_RES_12BIT_X128);
 
   // Use this initializer if using a 1.8" TFT screen:
   tft.initR(INITR_BLACKTAB);      // Init ST7735S chip, black tab
@@ -117,5 +122,5 @@ void loop() {
   delay(1000);
 
   _seconds++;
-  energy++;
+  energy += current * 1000 / 3600;
 }
