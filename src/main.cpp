@@ -19,6 +19,10 @@ float current = 0;
 float power = 0;
 float voltage = 0;
 
+// Timer variable
+unsigned long stopwatchStart;
+unsigned long executionTime;
+
 // For ST7735-based displays, we will use this call
 Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS, TFT_DC, TFT_MOSI, TFT_SCLK, TFT_RST);
 
@@ -42,7 +46,7 @@ void drawData(int x, float _current, float _power, float _voltage, float _energy
   tft.setTextWrap(true);
 
   // Current
-  y += 10;
+  y += 6;
   tft.fillRect(x, y, 48, 7, ST77XX_BLACK); // Clear screen zone
   tft.setCursor(x, y);
   str = "";
@@ -70,7 +74,12 @@ void drawData(int x, float _current, float _power, float _voltage, float _energy
   tft.fillRect(x, y, 48, 7, ST77XX_BLACK); // Clear screen zone
   tft.setCursor(x, y);
   str = "";
-  str = str + _energy + " mAh";
+  if (_energy > 10) {
+    str += int(_energy);
+  } else {
+    str += _energy;
+  }
+  str += + " mAh";
   tft.print(str.buf);
 
   // Time
@@ -95,13 +104,12 @@ void updateInterface() {
   power = ina.getPower();
   voltage = ina.getShuntVoltage();
 
-  Serial.print(ina.getCurrent());
-
-  drawData(10, current, power, voltage, energy, _seconds);
-  drawData(75, current, power, voltage, energy, _seconds);
+  drawData(7, current, power, voltage, energy, _seconds);
+  drawData(71, current, power, voltage, energy, _seconds);
 }
 
 void setup(void) {
+  stopwatchStart = micros();
   Serial.begin(9600);
 
   // Init Ina board
@@ -114,13 +122,42 @@ void setup(void) {
 
   // Clear display
   tft.fillScreen(ST77XX_BLACK);
+
+  executionTime = micros() - stopwatchStart;
+
+  // Serial.print(F("Init time (microseconds)\t"));
+  // Serial.println(executionTime);
+  // _seconds += executionTime / 1000000;
 }
 
 void loop() {
+  stopwatchStart = micros();
   updateInterface();
 
-  delay(1000);
+  energy += current * 1000 / 3600;
+
+  executionTime = micros() - stopwatchStart;
+
+  Serial.print(F("executionTime (microseconds)\t"));
+  Serial.println(executionTime);
+
+  unsigned long delayTimeMicros = 1000000;
+  delayTimeMicros -= executionTime;
+
+  // Serial.print(F("total deylaytim (microseconds)\t"));
+  // Serial.println(delayTimeMicros);
+
+  // Serial.print(F("delayTime (milliseconds)\t"));
+  // Serial.println(delayTimeMicros / 1000);
+
+  // Serial.print(F("delayTime (microseconds)\t"));
+  // Serial.println(delayTimeMicros % 1000);
+
+  // Delay milliseconds
+  delay(delayTimeMicros / 1000);
+
+  // Delay microseconds
+  delayMicroseconds(delayTimeMicros % 1000);
 
   _seconds++;
-  energy += current * 1000 / 3600;
 }
