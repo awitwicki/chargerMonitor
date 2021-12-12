@@ -11,13 +11,22 @@
 #define TFT_MOSI 11  // Data out
 #define TFT_SCLK 13  // Clock out
 
-INA219 ina;
+INA219 ina_1((uint8_t)0x40);
+INA219 ina_2((uint8_t)0x41);
+
 mString<34> str;
 int32_t _seconds = 0;
-float energy = 0;
-float current = 0;
-float power = 0;
-float voltage = 0;
+
+struct SensorStoredData {
+  float energy = 0;
+  float current = 0;
+  float power = 0;
+  float voltage = 0;
+};
+
+// Sensors data
+SensorStoredData sensor_1;
+SensorStoredData sensor_2;
 
 // Timer variable
 unsigned long stopwatchStart;
@@ -100,22 +109,32 @@ void updateInterface() {
   drawLine(65, 0, 128, ST77XX_GREEN);
   drawLine(66, 0, 128, ST77XX_GREEN);
 
-  current = ina.getCurrent();
-  power = ina.getPower();
-  voltage = ina.getShuntVoltage();
+  sensor_1.current = ina_1.getCurrent();
+  sensor_1.power = ina_1.getPower();
+  sensor_1.voltage = ina_1.getShuntVoltage();
 
-  drawData(7, current, power, voltage, energy, _seconds);
-  drawData(71, current, power, voltage, energy, _seconds);
+  sensor_2.current = ina_2.getCurrent();
+  sensor_2.power = ina_2.getPower();
+  sensor_2.voltage = ina_2.getShuntVoltage();
+
+  drawData(7, sensor_1.current, sensor_1.power, sensor_1.voltage, sensor_1.energy, _seconds);
+  drawData(71, sensor_2.current, sensor_2.power, sensor_2.voltage, sensor_2.energy, _seconds);
 }
 
 void setup(void) {
   stopwatchStart = micros();
   Serial.begin(9600);
 
-  // Init Ina board
-  ina.begin();
-  ina.setResolution(INA219_VBUS, INA219_RES_12BIT_X4);
-  ina.setResolution(INA219_VSHUNT, INA219_RES_12BIT_X128);
+  // Init Ina boards
+  // 1st
+  ina_1.begin();
+  ina_1.setResolution(INA219_VBUS, INA219_RES_12BIT_X4);
+  ina_1.setResolution(INA219_VSHUNT, INA219_RES_12BIT_X128); 
+
+  // 2nd
+  ina_2.begin();
+  ina_2.setResolution(INA219_VBUS, INA219_RES_12BIT_X4);
+  ina_2.setResolution(INA219_VSHUNT, INA219_RES_12BIT_X128);
 
   // Use this initializer if using a 1.8" TFT screen:
   tft.initR(INITR_BLACKTAB);      // Init ST7735S chip, black tab
@@ -134,7 +153,8 @@ void loop() {
   stopwatchStart = micros();
   updateInterface();
 
-  energy += current * 1000 / 3600;
+  sensor_1.energy += sensor_1.current * 1000 / 3600;
+  sensor_2.energy += sensor_2.current * 1000 / 3600;
 
   executionTime = micros() - stopwatchStart;
 
