@@ -18,6 +18,9 @@ mString<34> str;
 int32_t _seconds1 = 0;
 int32_t _seconds2 = 0;
 
+// Global char buffer for the printing of seconds in formatted time
+char formattedSecondsBuffer[14];
+
 struct SensorStoredData {
   float energy = 0;
   float current = 0;
@@ -32,6 +35,27 @@ SensorStoredData sensor_2;
 // Timer variable
 unsigned long stopwatchStart;
 unsigned long executionTime;
+
+char* getFormattedSecondsString(uint32_t allSeconds) {
+  uint16_t hours            = allSeconds / 3600;    // convert seconds to hours
+  uint16_t secondsRemaining = allSeconds % 3600;    // seconds left over
+
+  uint16_t minutes  = secondsRemaining / 60 ;       // convert seconds left over to minutes
+  uint16_t seconds  = secondsRemaining % 60;        // seconds left over
+
+  // "prints" formatted output to a char array (string)
+  snprintf(formattedSecondsBuffer, sizeof(formattedSecondsBuffer),
+            "%02d:"   //HH:
+            "%02d:"   //MM:
+            "%02d"   //SS
+            ,
+            hours,
+            minutes,
+            seconds
+          );
+
+  return formattedSecondsBuffer;
+}
 
 // For ST7735-based displays, we will use this call
 Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS, TFT_DC, TFT_MOSI, TFT_SCLK, TFT_RST);
@@ -96,8 +120,7 @@ void drawData(int x, float _current, float _power, float _voltage, float _energy
   y += step;
   tft.fillRect(x, y, 48, 7, ST77XX_BLACK); // Clear screen zone
   tft.setCursor(x, y);
-  str = "";
-  str = str + seconds/60 + ":" + seconds % 60;
+  str = getFormattedSecondsString(seconds);
   tft.print(str.buf);
 }
 
@@ -105,8 +128,8 @@ void updateInterface() {
   // tft.fillScreen(ST77XX_BLACK);
 
   // Draw borders
-  drawRect(0,0,128,128, ST77XX_GREEN);
-  drawRect(1,1,127,127, ST77XX_GREEN);
+  drawRect(0, 0, 128, 128, ST77XX_GREEN);
+  drawRect(1, 1, 127, 127, ST77XX_GREEN);
   drawLine(65, 0, 128, ST77XX_GREEN);
   drawLine(66, 0, 128, ST77XX_GREEN);
 
