@@ -15,7 +15,8 @@ INA219 ina_1((uint8_t)0x40);
 INA219 ina_2((uint8_t)0x41);
 
 mString<34> str;
-int32_t _seconds = 0;
+int32_t _seconds1 = 0;
+int32_t _seconds2 = 0;
 
 struct SensorStoredData {
   float energy = 0;
@@ -117,8 +118,8 @@ void updateInterface() {
   sensor_2.power = ina_2.getPower();
   sensor_2.voltage = ina_2.getShuntVoltage();
 
-  drawData(7, sensor_1.current, sensor_1.power, sensor_1.voltage, sensor_1.energy, _seconds);
-  drawData(71, sensor_2.current, sensor_2.power, sensor_2.voltage, sensor_2.energy, _seconds);
+  drawData(7, sensor_1.current, sensor_1.power, sensor_1.voltage, sensor_1.energy, _seconds1);
+  drawData(71, sensor_2.current, sensor_2.power, sensor_2.voltage, sensor_2.energy, _seconds2);
 }
 
 void setup(void) {
@@ -179,5 +180,10 @@ void loop() {
   // Delay microseconds
   delayMicroseconds(delayTimeMicros % 1000);
 
-  _seconds++;
+  if (sensor_1.current > 0.01) {
+    _seconds1++;
+  }
+  if (sensor_2.current > 0.01) {
+    _seconds2++;
+  }
 }
